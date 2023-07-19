@@ -1,0 +1,100 @@
+version: "3.3"
+
+services:
+  django:
+    container_name: django
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      - ./backend:/usr/src/django
+    command: >
+      sh -c "python manage.py makemigrations &&
+            python manage.py migrate &&
+            python manage.py flush --no-input &&
+            python manage.py seed_users &&
+            python manage.py seed_posts &&
+            python manage.py seed_comments &&
+            python manage.py seed_like &&
+            python manage.py seed_view_history &&
+            python manage.py seed_video_section &&
+            python manage.py seed_search &&
+            python manage.py seed_feedbacks &&
+            python manage.py runserver 0.0.0.0:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE}
+      DJANGO_LANGUAGE_CODE: ${DJANGO_LANGUAGE_CODE}
+      DJANGO_NEXTJS_URL: ${DJANGO_NEXTJS_URL}
+      DJANGO_S3_ACCESS_KEY_ID: ${DJANGO_S3_ACCESS_KEY_ID}
+      DJANGO_S3_SECRET_ACCESS_KEY: ${DJANGO_S3_SECRET_ACCESS_KEY}
+      TZ: "Asia/Seoul"
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_HOST: ${MYSQL_HOST}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      AWS_DOMAIN: ${AWS_DOMAIN}
+      ORIGIN_VIDEO_DOMAIN: ${ORIGIN_VIDEO_DOMAIN}
+      CLOUDFRONT_DOMAIN: ${CLOUDFRONT_DOMAIN}
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - server-network
+    depends_on:
+      - mysqldb
+
+  mysqldb:
+    container_name: mysqldb
+    image: mysql
+    restart: always
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./mysqldb/db:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      TZ: "Asia/Seoul"
+    networks:
+      - server-network
+
+networks:
+  server-network:
+
+  # redis:
+  #   image: redis:5.0-alpine
+  #   container_name: redis
+  #   ports:
+  #     - 6379:6379
+  #   restart: unless-stopped
+  #   networks:
+  #     - server-network
+
+  # worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   restart: unless-stopped
+  #   command: celery -A config worker --loglevel=info
+  #   environment:
+  #     DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+  #     DJANGO_TIME_ZONE: ${DJANGO_TIME_ZONE}
+  #     DJANGO_LANGUAGE_CODE: ${DJANGO_LANGUAGE_CODE}
+  #     DJANGO_NEXTJS_URL: ${DJANGO_NEXTJS_URL}
+  #     DJANGO_S3_ACCESS_KEY_ID: ${DJANGO_S3_ACCESS_KEY_ID}
+  #     DJANGO_S3_SECRET_ACCESS_KEY: ${DJANGO_S3_SECRET_ACCESS_KEY}
+  #     TZ: "Asia/Seoul"
+  #     MYSQL_DATABASE: ${MYSQL_DATABASE}
+  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  #     MYSQL_ROOT_HOST: ${MYSQL_HOST}
+  #     MYSQL_USER: ${MYSQL_USER}
+  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+  #   depends_on:
+  #     - redis
+  #     - django
+  #   networks:
+  #     - server-network

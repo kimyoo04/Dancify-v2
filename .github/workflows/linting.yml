@@ -1,0 +1,34 @@
+name: Actions on Pull Request to Develop
+
+on:
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  nextjs-build:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          yarn install --immutable --immutable-cache --check-cache
+
+      - name: Build Next.js app
+        env:
+          NEXT_PUBLIC_ENV_API_DOMAIN: ${{ secrets.NEXT_PUBLIC_ENV_API_DOMAIN }}
+          NEXT_PUBLIC_ENV_API_URL: ${{ secrets.NEXT_PUBLIC_ENV_API_URL }}
+          NEXT_PUBLIC_ENV_DOMAIN: ${{ secrets.NEXT_PUBLIC_ENV_DOMAIN }}
+          NEXT_PUBLIC_ENV_JWT_SECRET_KEY: ${{ secrets.NEXT_PUBLIC_ENV_JWT_SECRET_KEY }}
+        run: |
+          cd frontend
+          yarn run build
